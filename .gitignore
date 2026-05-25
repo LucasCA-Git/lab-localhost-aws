@@ -1,0 +1,15 @@
+# Environment
+.env
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# LocalStack
+volume/
+
+# Python
+__pycache__/
+*.pyc
