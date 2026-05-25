@@ -8,6 +8,263 @@ Mini plataforma AWS local utilizando LocalStack + Terraform para simular serviç
 
 Este projeto tem como objetivo criar um ambiente AWS local para:
 
+- desenvolvimento
+- testes
+- aprendizado
+- onboarding de desenvolvedores
+- simulação de arquitetura cloud
+- pipelines DevOps
+
+Tudo rodando localmente utilizando:
+
+- Docker
+- LocalStack
+- Terraform
+
+---
+
+# Guia para Desenvolvedores
+
+## O que é o LocalStack?
+
+LocalStack é uma ferramenta que simula os principais serviços da AWS localmente, rodando via Docker. Com ele você desenvolve, testa e valida integrações com AWS sem precisar de conta, sem custo e sem afetar ambientes reais.
+
+Documentação oficial: https://docs.localstack.cloud
+
+---
+
+## Instalação
+
+### Docker (obrigatório)
+
+```bash
+# Arch Linux
+sudo pacman -S docker docker-compose
+
+# Ubuntu/Debian
+sudo apt install docker.io docker-compose
+```
+
+### Token LocalStack
+
+Crie sua conta e obtenha o token em:
+https://app.localstack.cloud/sign-up
+
+---
+
+## Serviços simulados neste projeto
+
+| Serviço | Suporte |
+|---|---|
+| S3 | ✅ Completo |
+| SQS | ✅ Completo |
+| ECS | ✅ Completo |
+| ECR | ✅ Completo |
+| IAM | ✅ Completo |
+| Secrets Manager | ✅ Completo |
+| EventBridge | ✅ Completo |
+| CloudWatch Logs | ✅ Completo |
+| Glue | ⚠️ Parcial |
+
+---
+
+## ECS no LocalStack — Passo a Passo
+
+Documentação oficial: https://docs.localstack.cloud/aws/services/ecs/
+
+> Pré-requisito: instalar o `awslocal`
+> ```bash
+> pip install awscli-local
+> ```
+
+### 1. Criar o cluster
+
+```bash
+awslocal ecs create-cluster --cluster-name mycluster
+```
+
+### 2. Criar a task definition
+
+Crie um arquivo `task_definition.json`:
+
+```json
+{
+  "containerDefinitions": [
+    {
+      "name": "server",
+      "image": "ubuntu",
+      "cpu": 10,
+      "memory": 10,
+      "command": ["sh", "-c", "while true; do echo running; sleep 1; done"],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-create-group": "true",
+          "awslogs-group": "myloggroup",
+          "awslogs-stream-prefix": "myprefix",
+          "awslogs-region": "us-east-1"
+        }
+      }
+    }
+  ],
+  "family": "myfamily"
+}
+```
+
+Registre a task definition:
+
+```bash
+awslocal ecs register-task-definition --cli-input-json file://task_definition.json
+```
+
+### 3. Criar o serviço
+
+```bash
+awslocal ecs create-service \
+  --service-name myservice \
+  --cluster mycluster \
+  --task-definition myfamily \
+  --desired-count 1
+```
+
+### 4. Verificar o container rodando
+
+```bash
+docker ps
+```
+
+Você verá um container criado pelo LocalStack com a imagem definida na task.
+
+### 5. Ver os logs
+
+```bash
+awslocal logs filter-log-events \
+  --log-group-name myloggroup \
+  --query 'events[].message'
+```
+
+> **Nota:** Por padrão o LocalStack usa Fargate como launch type, utilizando o Docker Engine local para rodar os containers — sem necessidade de criar instâncias EC2.
+
+---
+
+# Serviços AWS Simulados
+
+| Serviço | Status |
+|---|---|
+| S3 | ✅ |
+| SQS | ✅ |
+| ECS | ✅ |
+| ECR | ✅ |
+| IAM | ✅ |
+| Secrets Manager | ✅ |
+| EventBridge | ✅ |
+| CloudWatch Logs | ✅ |
+| Glue | ⚠️ Parcial |
+| Athena | ⚠️ Futuro |
+| OpenSearch | ❌ Não suportado no LocalStack |
+| DocumentDB | ❌ Não suportado no LocalStack |
+
+---
+
+# Arquitetura
+
+```txt
+Developer
+   ↓
+Terraform
+   ↓
+LocalStack
+   ↓
+AWS Services Mockados
+```
+
+---
+
+# Estrutura do Projeto
+
+```txt
+localstack-aws/
+├── infra/
+│   ├── environments/
+│   │   └── local/
+│   │       ├── main.tf
+│   │       ├── provider.tf
+│   │       ├── outputs.tf
+│   │       ├── variables.tf
+│   │       └── terraform.tfvars
+│   │
+│   └── modules/
+│       ├── ecs/
+│       ├── ecr/
+│       ├── s3/
+│       ├── sqs/
+│       ├── iam/
+│       ├── logs/
+│       ├── secrets/
+│       ├── eventbridge/
+│       └── glue/
+│
+├── docker-compose.yml
+├── .env
+├── .env.example
+├── infra_up.py
+├── infra_destroy.py
+├── README.md
+└── volume/
+```
+
+---
+
+# Requisitos
+
+## Instalar Docker
+
+### Linux Arch
+
+```bash
+sudo pacman -S docker docker-compose
+```
+
+### Ubuntu/Debian
+
+```bash
+sudo apt install docker.io docker-compose
+```
+
+---
+
+## Instalar Terraform
+
+Site oficial:
+
+https://developer.hashicorp.com/terraform/install
+
+### Linux Arch
+
+```bash
+sudo pacman -S terraform
+```
+
+### Ubuntu/Debian
+
+```bash
+sudo apt install terraform
+```
+
+---
+
+## Instalar Python
+
+### Linux Arch
+
+```bash
+sudo pacman -S python
+```
+
+### Ubuntu/Debian
+
+```bash
 sudo apt install python3
 ```
 
@@ -448,3 +705,4 @@ terraform.tfstate.backup
 ```
 
 ---
+
