@@ -448,7 +448,3 @@ terraform.tfstate.backup
 ```
 
 ---
-
-# Licença
-
-MIT
