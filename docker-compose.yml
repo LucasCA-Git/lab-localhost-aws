@@ -1,0 +1,16 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+
+    network_mode: host
+
+    environment:
+      - DEBUG=1
+      - PERSISTENCE=1
+      - LOCALSTACK_AUTH_TOKEN=${TOKEN_LOCALSTACK}
+      - SERVICES=s3,sqs,ecs,ecr,iam,logs,secretsmanager,events,glue,cloudwatch,sts
+
+    volumes:
+      - ./volume:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
